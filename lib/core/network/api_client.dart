@@ -2,7 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../config/app_config.dart';
+import '../../config/api_config.dart';
 import '../storage/session_storage.dart';
 import 'api_exception.dart';
 
@@ -15,7 +15,7 @@ class ApiClient {
   ApiClient(this._sessionStorage) {
     _dio = Dio(
       BaseOptions(
-        baseUrl: AppConfig.apiBaseUrl,
+        baseUrl: ApiConfig.apiBaseUrl,
         connectTimeout: const Duration(seconds: 30),
         receiveTimeout: const Duration(seconds: 30),
       ),
@@ -38,7 +38,10 @@ class ApiClient {
   final SessionStorage _sessionStorage;
   late final Dio _dio;
 
-  Future<dynamic> get(String path, {Map<String, dynamic>? queryParameters}) async {
+  Future<dynamic> get(
+    String path, {
+    Map<String, dynamic>? queryParameters,
+  }) async {
     try {
       final response = await _dio.get(path, queryParameters: queryParameters);
       return response.data;
@@ -47,9 +50,17 @@ class ApiClient {
     }
   }
 
-  Future<dynamic> post(String path, {dynamic data, Map<String, dynamic>? queryParameters}) async {
+  Future<dynamic> post(
+    String path, {
+    dynamic data,
+    Map<String, dynamic>? queryParameters,
+  }) async {
     try {
-      final response = await _dio.post(path, data: data, queryParameters: queryParameters);
+      final response = await _dio.post(
+        path,
+        data: data,
+        queryParameters: queryParameters,
+      );
       return response.data;
     } on DioException catch (error) {
       throw _mapDioError(error);
@@ -118,17 +129,16 @@ class ApiClient {
 
     if (isNetworkIssue) {
       return ApiException(
-        'Cannot connect to the backend API. Make sure the server is running at ${AppConfig.apiBaseUrl}.',
+        'Cannot connect to the backend API at ${ApiConfig.apiBaseUrl}.',
       );
     }
 
     final validationMessage = _extractValidationMessage(data);
-    final message =
-        data is Map<String, dynamic>
-            ? validationMessage == null
-                ? (data['message'] as String? ?? 'Unexpected API error')
-                : '${data['message'] ?? 'Validation failed'}: $validationMessage'
-            : error.message ?? 'Unexpected API error';
+    final message = data is Map<String, dynamic>
+        ? validationMessage == null
+              ? (data['message'] as String? ?? 'Unexpected API error')
+              : '${data['message'] ?? 'Validation failed'}: $validationMessage'
+        : error.message ?? 'Unexpected API error';
     return ApiException(message, statusCode: error.response?.statusCode);
   }
 }
